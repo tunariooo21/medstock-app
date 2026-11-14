@@ -1,0 +1,29 @@
+workflows:
+  ios-unsigned-ipa:
+    name: Medstock iOS (unsigned IPA)
+    instance_type: mac_mini_m2
+    max_build_duration: 45
+    environment:
+      flutter: stable
+      xcode: latest
+      vars:
+        API_URL: "https://medstock-api-crkz.onrender.com"
+    cache:
+      cache_paths:
+        - ~/.pub-cache
+    scripts:
+      - name: Flutter packages
+        script: flutter pub get
+      - name: Build iOS without code signing
+        script: flutter build ios --release --no-codesign --dart-define=API_URL="$API_URL"
+      - name: Package unsigned IPA
+        script: |
+          cd build/ios/iphoneos
+          rm -rf Payload medstock-unsigned.ipa
+          mkdir Payload
+          cp -R Runner.app Payload/
+          zip -qry medstock-unsigned.ipa Payload
+          ls -la medstock-unsigned.ipa
+    artifacts:
+      - build/ios/iphoneos/medstock-unsigned.ipa
+      - /tmp/xcodebuild_logs/*.log
