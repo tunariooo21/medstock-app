@@ -1,3 +1,5 @@
+import 'l10n.dart' hide ayAdi;
+
 import 'package:flutter/material.dart';
 
 import 'manager_service.dart';
@@ -35,12 +37,14 @@ class _GeriQaytarmalarEkraniState extends State<GeriQaytarmalarEkrani> {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
           child: DropdownMenu<String>(
+            key: ValueKey('month-${Localizations.localeOf(context)}'),
             initialSelection: _ay,
-            label: const Text('Ay'),
+            label: Text(t('Ay')),
             expandedInsets: EdgeInsets.zero,
             requestFocusOnTap: false,
             dropdownMenuEntries: [
-              for (final a in _aylar) DropdownMenuEntry(value: a, label: ayAdi(a)),
+              for (final a in _aylar)
+                DropdownMenuEntry(value: a, label: ayAdi(a)),
             ],
             onSelected: (v) {
               if (v != null) setState(() => _ay = v);
@@ -53,7 +57,7 @@ class _GeriQaytarmalarEkraniState extends State<GeriQaytarmalarEkrani> {
             yukle: () => MenecerServisi.geriQaytarmalar(_ay),
             bosdur: (g) => g.siyahi.isEmpty,
             bosIkon: Icons.assignment_return_outlined,
-            bosMetn: 'Bu ay üçün geri qaytarma qeydi yoxdur',
+            bosMetn: t('Bu ay üçün geri qaytarma qeydi yoxdur'),
             qur: (context, g) => _Siyahi(g: g),
           ),
         ),
@@ -80,31 +84,20 @@ class _Siyahi extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Ay üzrə cəmi · ${ayAdi(g.ay)}',
-                    style: tema.titleSmall
-                        ?.copyWith(color: scheme.onPrimaryContainer)),
-                const SizedBox(height: 4),
-                Text('${g.cemi}',
-                    style: tema.displaySmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: scheme.onPrimaryContainer)),
-                const SizedBox(height: 8),
-                for (final d in g.dermanlar)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 2),
-                    child: Row(
-                      children: [
-                        Expanded(
-                            child: Text(d.ad,
-                                style: TextStyle(
-                                    color: scheme.onPrimaryContainer))),
-                        Text('${d.cemi}',
-                            style: tema.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: scheme.onPrimaryContainer)),
-                      ],
-                    ),
+                Text(
+                  '${t('Ay üzrə cəmi')} · ${ayAdi(g.ay)}',
+                  style: tema.titleSmall?.copyWith(
+                    color: scheme.onPrimaryContainer,
                   ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${g.cemi}',
+                  style: tema.displaySmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: scheme.onPrimaryContainer,
+                  ),
+                ),
               ],
             ),
           ),
@@ -121,13 +114,17 @@ class _Siyahi extends StatelessWidget {
                     : Icons.local_pharmacy_outlined,
               ),
               title: Text('${s.derman} · ${s.pointAd}'),
-              subtitle: Text([
-                tarixGoster(s.tarix),
-                s.isciAd,
-                if ((s.sebeb ?? '').isNotEmpty) s.sebeb!,
-              ].join(' · ')),
-              trailing: Text('${s.say}',
-                  style: tema.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+              subtitle: Text(
+                [
+                  tarixGoster(s.tarix),
+                  s.isciAd,
+                  if ((s.sebeb ?? '').isNotEmpty) s.sebeb!,
+                ].join(' · '),
+              ),
+              trailing: Text(
+                '${s.say}',
+                style: tema.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              ),
             ),
           ),
       ],

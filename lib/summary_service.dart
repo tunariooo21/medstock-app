@@ -4,7 +4,9 @@ import 'summary_models.dart';
 class XulaseServisi {
   static Future<Xulase> yukle(String ay, int? region) async {
     final regionHissesi = region != null ? '&region=$region' : '';
-    final cavab = await ApiClient.get('/reports/summary?month=$ay$regionHissesi');
+    final cavab = await ApiClient.get(
+      '/reports/summary?month=$ay$regionHissesi',
+    );
     return Xulase.fromJson(cavab as Map<String, dynamic>);
   }
 

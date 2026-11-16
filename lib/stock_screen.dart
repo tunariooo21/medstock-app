@@ -1,9 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'entry_form.dart';
-import 'report_screen.dart';
+import 'l10n.dart';
+import 'history_screen.dart';
 import 'stock_models.dart';
 import 'stock_service.dart';
+import 'stock_request_screen.dart';
+import 'stock_request_service.dart';
 import 'theme/app_theme.dart';
 import 'widgets/state_widgets.dart';
 
@@ -18,7 +23,8 @@ List<String> _sonAylar(int say) {
 }
 
 class StokEkrani extends StatelessWidget {
-  const StokEkrani({super.key});
+  final bool aktiv;
+  const StokEkrani({super.key, this.aktiv = true});
 
   @override
   Widget build(BuildContext context) {
@@ -26,36 +32,79 @@ class StokEkrani extends StatelessWidget {
       yukle: StokServisi.secimler,
       bosdur: (s) => s.regionlar.isEmpty || s.dermanlar.isEmpty,
       bosIkon: Icons.inventory_2_outlined,
-      bosMetn: 'Sənə region və ya dərman təyin olunmayıb. Admindən xahiş et.',
-      qur: (context, s) => _StokForma(secimler: s),
+      bosMetn: t('region_derman_teyin_edilmeyib'),
+      qur: (context, s) => _StokForma(secimler: s, aktiv: aktiv),
     );
   }
 }
 
 class _StokForma extends StatefulWidget {
   final StokSecimleri secimler;
-  const _StokForma({required this.secimler});
+  final bool aktiv;
+  const _StokForma({required this.secimler, required this.aktiv});
 
   @override
   State<_StokForma> createState() => _StokFormaState();
 }
 
-class _StokFormaState extends State<_StokForma> {
+class _StokFormaState extends State<_StokForma> with WidgetsBindingObserver {
   final List<String> _aylar = _sonAylar(12);
   late int _region = widget.secimler.regionlar.first.id;
   late String _ay = _aylar.first;
   int _derman = 0; // 0 = bütün dərmanlar
   int _acar = 0;
+  int _sorguSayi = 0;
+  bool _aktiv = true;
+  Timer? _timer;
   StokNeticesi? _son;
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    StokTalebServisi.deyisdi.addListener(_yenile);
+    _timer = Timer.periodic(const Duration(seconds: 30), (_) => _yenile());
+  }
+
+  void _yenile() {
+    if (mounted && widget.aktiv && _aktiv && _sorguSayi == 0) {
+      setState(() => _acar++);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _StokForma oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.aktiv && !oldWidget.aktiv) _yenile();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _aktiv = state == AppLifecycleState.resumed;
+    if (_aktiv) _yenile();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    StokTalebServisi.deyisdi.removeListener(_yenile);
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
   Future<StokNeticesi> _yukle() async {
-    final netice = await StokServisi.yukle(
-      region: _region,
-      ay: _ay,
-      derman: _derman == 0 ? null : _derman,
-    );
-    _son = netice;
-    return netice;
+    _sorguSayi++;
+    try {
+      final netice = await StokServisi.yukle(
+        region: _region,
+        ay: _ay,
+        derman: _derman == 0 ? null : _derman,
+      );
+      _son = netice;
+      return netice;
+    } finally {
+      _sorguSayi--;
+    }
   }
 
   Future<void> _qeydAc({int? noqteId, int? dermanId}) async {
@@ -81,12 +130,35 @@ class _StokFormaState extends State<_StokForma> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _qeydAc(),
         icon: const Icon(Icons.add),
-        label: const Text('Qeyd əlavə et'),
+        label: Text(t('qeyd_elave_et')),
       ),
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const StokTalebleriEkrani(),
+                  ),
+                ),
+                icon: const Icon(Icons.notification_add_outlined),
+                label: Text(t('stok_telebleri')),
+              ),
+            ),
+          ),
+          Container(
+            margin: const EdgeInsets.fromLTRB(16, 8, 16, 6),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
+            ),
             child: Column(
               children: [
                 Row(
@@ -94,7 +166,7 @@ class _StokFormaState extends State<_StokForma> {
                     Expanded(
                       child: DropdownMenu<int>(
                         initialSelection: _region,
-                        label: const Text('Region'),
+                        label: Text(t('region')),
                         expandedInsets: EdgeInsets.zero,
                         requestFocusOnTap: false,
                         dropdownMenuEntries: [
@@ -109,8 +181,11 @@ class _StokFormaState extends State<_StokForma> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: DropdownMenu<String>(
+                        key: ValueKey(
+                          'month-${Localizations.localeOf(context)}',
+                        ),
                         initialSelection: _ay,
-                        label: const Text('Ay'),
+                        label: Text(t('ay')),
                         expandedInsets: EdgeInsets.zero,
                         requestFocusOnTap: false,
                         dropdownMenuEntries: [
@@ -126,12 +201,13 @@ class _StokFormaState extends State<_StokForma> {
                 ),
                 const SizedBox(height: 8),
                 DropdownMenu<int>(
+                  key: ValueKey('medicine-${Localizations.localeOf(context)}'),
                   initialSelection: _derman,
-                  label: const Text('Dərman'),
+                  label: Text(t('derman')),
                   expandedInsets: EdgeInsets.zero,
                   requestFocusOnTap: false,
                   dropdownMenuEntries: [
-                    const DropdownMenuEntry(value: 0, label: 'Bütün dərmanlar'),
+                    DropdownMenuEntry(value: 0, label: t('butun_dermanlar')),
                     for (final d in s.dermanlar)
                       DropdownMenuEntry(
                         value: d.id,
@@ -156,20 +232,34 @@ class _StokFormaState extends State<_StokForma> {
               yukle: _yukle,
               bosdur: (n) => n.noqteler.isEmpty,
               bosIkon: Icons.store_outlined,
-              bosMetn: 'Bu regionda aktiv aptek və ya depo yoxdur',
-              qur: (context, n) => ListView(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
-                children: [
-                  _Izah(n: n),
-                  const SizedBox(height: 8),
-                  _RegionCemi(n: n),
-                  const SizedBox(height: 12),
-                  for (final p in n.noqteler)
-                    _NoqteKarti(
-                      p: p,
-                      onTap: () => _qeydAc(noqteId: p.id),
-                    ),
-                ],
+              bosMetn: t('aktiv_noqte_yoxdur'),
+              qur: (context, n) => RefreshIndicator(
+                onRefresh: () async => setState(() => _acar++),
+                child: ListView(
+                  key: PageStorageKey('stock|$_region|$_ay|$_derman'),
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 96),
+                  children: [
+                    _Izah(n: n),
+                    const SizedBox(height: 10),
+                    _RegionCemi(n: n),
+                    const SizedBox(height: 12),
+                    for (final p in n.noqteler)
+                      _NoqteKarti(
+                        p: p,
+                        regionId: _region,
+                        onTap: () => _qeydAc(noqteId: p.id),
+                        onTarixceQayit: () => setState(() => _acar++),
+                        onBildir: _ay == _aylar.first
+                            ? (d) => stokTalebiAc(
+                                context,
+                                pointId: p.id,
+                                medicineId: d.medicineId,
+                              )
+                            : null,
+                      ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -188,7 +278,7 @@ class _Izah extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final tema = Theme.of(context).textTheme;
-    final qaliqSozu = n.cariAy ? 'bu günə' : 'ayın sonuna';
+    final qaliqSozu = n.cariAy ? t('bu_gune') : t('ayin_sonuna');
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -202,8 +292,9 @@ class _Izah extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Qalıq: $qaliqSozu aptek və ya depoda olan say.\n'
-              'Satılıb və Resept: ${ayAdi(n.ay)} ərzində.',
+              t('qaliq_izah')
+                  .replaceAll('{qaliq}', qaliqSozu)
+                  .replaceAll('{ay}', ayAdi(n.ay)),
               style: tema.bodySmall,
             ),
           ),
@@ -224,9 +315,18 @@ class _SutunBasliqi extends StatelessWidget {
     return Row(
       children: [
         const Expanded(child: SizedBox.shrink()),
-        SizedBox(width: 56, child: Text('Qalıq', textAlign: TextAlign.right, style: stil)),
-        SizedBox(width: 60, child: Text('Satılıb', textAlign: TextAlign.right, style: stil)),
-        SizedBox(width: 56, child: Text('Resept', textAlign: TextAlign.right, style: stil)),
+        SizedBox(
+          width: 56,
+          child: Text(t('qaliq'), textAlign: TextAlign.right, style: stil),
+        ),
+        SizedBox(
+          width: 60,
+          child: Text(t('satilib'), textAlign: TextAlign.right, style: stil),
+        ),
+        SizedBox(
+          width: 56,
+          child: Text(t('resept'), textAlign: TextAlign.right, style: stil),
+        ),
       ],
     );
   }
@@ -249,7 +349,7 @@ class _RegionCemi extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Region cəmi · ${ayAdi(n.ay)}',
+              t('region_cemi').replaceAll('{ay}', ayAdi(n.ay)),
               style: tema.titleSmall?.copyWith(color: yazi),
             ),
             const SizedBox(height: 8),
@@ -263,7 +363,10 @@ class _RegionCemi extends StatelessWidget {
                     _Noqte(AppTheme.dermanRengi(d.sira)),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text(d.ad, style: tema.bodyLarge?.copyWith(color: yazi)),
+                      child: Text(
+                        d.ad,
+                        style: tema.bodyLarge?.copyWith(color: yazi),
+                      ),
                     ),
                     SizedBox(
                       width: 56,
@@ -318,8 +421,17 @@ class _Noqte extends StatelessWidget {
 
 class _NoqteKarti extends StatelessWidget {
   final StokNoqte p;
+  final int regionId;
   final VoidCallback onTap;
-  const _NoqteKarti({required this.p, required this.onTap});
+  final VoidCallback onTarixceQayit;
+  final void Function(NoqteDerman)? onBildir;
+  const _NoqteKarti({
+    required this.p,
+    required this.regionId,
+    required this.onTap,
+    required this.onTarixceQayit,
+    this.onBildir,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -337,6 +449,23 @@ class _NoqteKarti extends StatelessWidget {
               Row(
                 children: [
                   Expanded(child: Text(p.ad, style: tema.titleMedium)),
+                  IconButton(
+                    tooltip: t('qeyd_tarixcesi'),
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(Icons.history, size: 20),
+                    onPressed: () async {
+                      await Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => TarixceEkrani(
+                            regionId: regionId,
+                            noqteId: p.id,
+                            basliq: p.ad,
+                          ),
+                        ),
+                      );
+                      onTarixceQayit();
+                    },
+                  ),
                   Chip(
                     visualDensity: VisualDensity.compact,
                     avatar: Icon(
@@ -345,14 +474,28 @@ class _NoqteKarti extends StatelessWidget {
                           : Icons.local_pharmacy_outlined,
                       size: 16,
                     ),
-                    label: Text(p.novu == 'depo' ? 'Depo' : 'Aptek'),
+                    label: Text(p.novu == 'depo' ? t('depo') : t('aptek')),
                   ),
                 ],
               ),
               const SizedBox(height: 4),
               const _SutunBasliqi(),
               const Divider(height: 12),
-              for (final d in p.dermanlar) _DermanSetri(d: d),
+              for (final d in p.dermanlar) ...[
+                _DermanSetri(d: d),
+                if (d.status != 'normal' && onBildir != null)
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      onPressed: () => onBildir!(d),
+                      icon: const Icon(
+                        Icons.notification_add_outlined,
+                        size: 18,
+                      ),
+                      label: Text(t('bildir')),
+                    ),
+                  ),
+              ],
             ],
           ),
         ),
@@ -398,9 +541,9 @@ class _DermanSetri extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        d.status == 'az' ? 'Az qalıb' : 'Qalıq yoxdur',
+                        d.status == 'az' ? t('az_qalib') : t('qaliq_yoxdur'),
                         style: tema.bodySmall?.copyWith(
-                          color: nisanRengi,
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -416,17 +559,25 @@ class _DermanSetri extends StatelessWidget {
               textAlign: TextAlign.right,
               style: tema.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: nisanRengi,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ),
           SizedBox(
             width: 60,
-            child: Text('${d.satilib}', textAlign: TextAlign.right, style: tema.bodyLarge),
+            child: Text(
+              '${d.satilib}',
+              textAlign: TextAlign.right,
+              style: tema.bodyLarge,
+            ),
           ),
           SizedBox(
             width: 56,
-            child: Text('${d.resept}', textAlign: TextAlign.right, style: tema.bodyLarge),
+            child: Text(
+              '${d.resept}',
+              textAlign: TextAlign.right,
+              style: tema.bodyLarge,
+            ),
           ),
         ],
       ),

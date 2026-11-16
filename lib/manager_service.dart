@@ -60,7 +60,10 @@ class MenecerServisi {
   }
 
   static Future<void> qiymetElave(
-      int dermanId, double qiymet, String baslamaTarixi) async {
+    int dermanId,
+    double qiymet,
+    String baslamaTarixi,
+  ) async {
     await ApiClient.post('/prices', {
       'medicine_id': dermanId,
       'qiymet': qiymet,

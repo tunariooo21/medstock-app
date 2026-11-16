@@ -37,7 +37,9 @@ class HesabatServisi {
         });
       }
     });
-    final cavab = await ApiClient.put('/reports/monthly/$id', {'setirler': setirler});
+    final cavab = await ApiClient.put('/reports/monthly/$id', {
+      'setirler': setirler,
+    });
     return Hesabat.fromJson(cavab as Map<String, dynamic>);
   }
 

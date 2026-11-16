@@ -1,3 +1,5 @@
+import 'l10n.dart' hide ayAdi;
+
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -34,7 +36,7 @@ class ApiClient {
     try {
       res = await sorgu(await _basliqlar()).timeout(_limit);
     } catch (_) {
-      throw ApiException('Serverlə əlaqə qurulmadı');
+      throw ApiException(t('Serverlə əlaqə qurulmadı'));
     }
 
     dynamic govde;
@@ -49,14 +51,14 @@ class ApiClient {
 
     if (res.statusCode == 401) {
       sessiyaBitdi?.call();
-      throw ApiException('Sessiya bitib, yenidən daxil ol', kod: 401);
+      throw ApiException(t('Sessiya bitib, yenidən daxil ol'), kod: 401);
     }
 
-    var mesaj = 'Server xətası (${res.statusCode})';
+    var mesaj = '${t('Server xətası')} (${res.statusCode})';
     if (govde is Map && govde['detail'] is String) {
-      mesaj = govde['detail'] as String;
+      mesaj = t(govde['detail'] as String);
     } else if (res.statusCode == 422) {
-      mesaj = 'Məlumatlar düzgün deyil';
+      mesaj = t('Məlumatlar düzgün deyil');
     }
     throw ApiException(mesaj, kod: res.statusCode);
   }
@@ -65,12 +67,54 @@ class ApiClient {
       _icra((h) => http.get(Uri.parse('$baseUrl$yol'), headers: h));
 
   static Future<dynamic> put(String yol, Object govde) => _icra(
-        (h) => http.put(Uri.parse('$baseUrl$yol'),
-            headers: h, body: jsonEncode(govde)),
-      );
+    (h) => http.put(
+      Uri.parse('$baseUrl$yol'),
+      headers: h,
+      body: jsonEncode(govde),
+    ),
+  );
+
+  static Future<dynamic> patch(String yol, Object govde) => _icra(
+    (h) => http.patch(
+      Uri.parse('$baseUrl$yol'),
+      headers: h,
+      body: jsonEncode(govde),
+    ),
+  );
+
+  static Future<dynamic> delete(String yol) =>
+      _icra((h) => http.delete(Uri.parse('$baseUrl$yol'), headers: h));
+
+  /// Fayl yükləmək (Excel ixracı): JSON yox, xam baytlar qaytarır.
+  static Future<Uint8List> baytYukle(String yol) async {
+    final http.Response res;
+    try {
+      res = await http
+          .get(Uri.parse('$baseUrl$yol'), headers: await _basliqlar())
+          .timeout(_limit);
+    } catch (_) {
+      throw ApiException(t('Serverlə əlaqə qurulmadı'));
+    }
+    if (res.statusCode >= 200 && res.statusCode < 300) return res.bodyBytes;
+    if (res.statusCode == 401) {
+      sessiyaBitdi?.call();
+      throw ApiException(t('Sessiya bitib, yenidən daxil ol'), kod: 401);
+    }
+    var mesaj = '${t('Server xətası')} (${res.statusCode})';
+    try {
+      final govde = jsonDecode(utf8.decode(res.bodyBytes));
+      if (govde is Map && govde['detail'] is String) {
+        mesaj = t(govde['detail'] as String);
+      }
+    } catch (_) {}
+    throw ApiException(mesaj, kod: res.statusCode);
+  }
 
   static Future<dynamic> post(String yol, [Object? govde]) => _icra(
-        (h) => http.post(Uri.parse('$baseUrl$yol'),
-            headers: h, body: govde == null ? null : jsonEncode(govde)),
-      );
+    (h) => http.post(
+      Uri.parse('$baseUrl$yol'),
+      headers: h,
+      body: govde == null ? null : jsonEncode(govde),
+    ),
+  );
 }

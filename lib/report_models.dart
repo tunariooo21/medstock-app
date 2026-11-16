@@ -6,11 +6,11 @@ class Hekim {
   final String clinicAd;
 
   Hekim.fromJson(Map<String, dynamic> j)
-      : id = j['id'] as int,
-        ad = j['ad'] as String,
-        ixtisas = j['ixtisas'] as String?,
-        clinicId = j['clinic_id'] as int,
-        clinicAd = j['clinic_ad'] as String;
+    : id = j['id'] as int,
+      ad = j['ad'] as String,
+      ixtisas = j['ixtisas'] as String?,
+      clinicId = j['clinic_id'] as int,
+      clinicAd = j['clinic_ad'] as String;
 }
 
 class Derman {
@@ -19,9 +19,9 @@ class Derman {
   final int sira;
 
   Derman.fromJson(Map<String, dynamic> j)
-      : id = j['id'] as int,
-        ad = j['ad'] as String,
-        sira = j['sira'] as int;
+    : id = j['id'] as int,
+      ad = j['ad'] as String,
+      sira = j['sira'] as int;
 }
 
 class Hesabat {
@@ -35,15 +35,15 @@ class Hesabat {
   final Map<String, int> say;
 
   Hesabat.fromJson(Map<String, dynamic> j)
-      : id = j['id'] as int,
-        ay = j['ay'] as String,
-        status = j['status'] as String,
-        serh = j['menecer_serhi'] as String?,
-        redakteOlunaBiler = j['redakte_oluna_biler'] as bool,
-        say = {
-          for (final s in (j['setirler'] as List))
-            '${s['doctor_id']}:${s['medicine_id']}': s['say'] as int,
-        };
+    : id = j['id'] as int,
+      ay = j['ay'] as String,
+      status = j['status'] as String,
+      serh = j['menecer_serhi'] as String?,
+      redakteOlunaBiler = j['redakte_oluna_biler'] as bool,
+      say = {
+        for (final s in (j['setirler'] as List))
+          '${s['doctor_id']}:${s['medicine_id']}': s['say'] as int,
+      };
 }
 
 class HesabatMelumati {

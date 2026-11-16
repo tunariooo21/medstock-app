@@ -46,3 +46,15 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+.env
+.env.*
+!.env.example
+*.db
+*.sqlite
+*.sqlite3
+*.jks
+*.keystore
+*.pem
+*.key
+*.p12
+*.pfx

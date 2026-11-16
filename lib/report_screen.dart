@@ -1,3 +1,5 @@
+import 'l10n.dart' hide ayAdi;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -7,15 +9,7 @@ import 'report_service.dart';
 import 'theme/app_theme.dart';
 import 'widgets/state_widgets.dart';
 
-const _aylar = [
-  'Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'İyun',
-  'İyul', 'Avqust', 'Sentyabr', 'Oktyabr', 'Noyabr', 'Dekabr',
-];
-
-String ayAdi(String ay) {
-  final hisseler = ay.split('-');
-  return '${_aylar[int.parse(hisseler[1]) - 1]} ${hisseler[0]}';
-}
+String ayAdi(String ay) => L10n.ayAdi(ay);
 
 class HesabatEkrani extends StatelessWidget {
   const HesabatEkrani({super.key});
@@ -26,7 +20,9 @@ class HesabatEkrani extends StatelessWidget {
       yukle: HesabatServisi.yukle,
       bosdur: (d) => d.hekimler.isEmpty || d.dermanlar.isEmpty,
       bosIkon: Icons.people_outline,
-      bosMetn: 'Regionunda aktiv həkim və ya dərman yoxdur. Admindən xahiş et.',
+      bosMetn: t(
+        'Regionunda aktiv həkim və ya dərman yoxdur. Admindən xahiş et.',
+      ),
       qur: (context, d) => _HesabatForma(melumat: d),
     );
   }
@@ -76,15 +72,14 @@ class _HesabatFormaState extends State<_HesabatForma> {
   Future<void> _saxla() async {
     setState(() => _mesgul = true);
     try {
-      final yeni =
-          await HesabatServisi.saxla(_hesabat.id, _say, _hekimIdleri);
+      final yeni = await HesabatServisi.saxla(_hesabat.id, _say, _hekimIdleri);
       if (!mounted) return;
       setState(() {
         _hesabat = yeni;
         _say = Map.of(yeni.say);
         _deyisib = false;
       });
-      _bildir('Yadda saxlandı');
+      _bildir(t('Yadda saxlandı'));
     } on ApiException catch (e) {
       _bildir(e.mesaj, xeta: true);
     } finally {
@@ -96,16 +91,16 @@ class _HesabatFormaState extends State<_HesabatForma> {
     final tesdiq = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Hesabat göndərilsin?'),
-        content: const Text('Göndərildikdən sonra hesabatı dəyişmək olmaz.'),
+        title: Text(t('Hesabat göndərilsin?')),
+        content: Text(t('Göndərildikdən sonra hesabatı dəyişmək olmaz.')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Ləğv et'),
+            child: Text(t('Ləğv et')),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Göndər'),
+            child: Text(t('Göndər')),
           ),
         ],
       ),
@@ -122,7 +117,7 @@ class _HesabatFormaState extends State<_HesabatForma> {
         _say = Map.of(yeni.say);
         _deyisib = false;
       });
-      _bildir('Hesabat göndərildi');
+      _bildir(t('Hesabat göndərildi'));
     } on ApiException catch (e) {
       _bildir(e.mesaj, xeta: true);
     } finally {
@@ -133,11 +128,14 @@ class _HesabatFormaState extends State<_HesabatForma> {
   Widget _ustHisse() {
     final scheme = Theme.of(context).colorScheme;
     final (metn, ikon, reng) = switch (_hesabat.status) {
-      'qaralama' => ('Qaralama', Icons.edit_note, scheme.outline),
-      'gonderildi' => ('Göndərilib', Icons.send, scheme.primary),
-      'geri_qaytarildi' => ('Geri qaytarılıb', Icons.reply, AppTheme.azQalib),
-      'tesdiqlendi' =>
-        ('Təsdiqlənib', Icons.check_circle, Colors.green.shade700),
+      'qaralama' => (t('Qaralama'), Icons.edit_note, scheme.outline),
+      'gonderildi' => (t('Göndərilib'), Icons.send, scheme.primary),
+      'geri_qaytarildi' => (
+        t('Geri qaytarılıb'),
+        Icons.reply,
+        AppTheme.azQalib,
+      ),
+      'tesdiqlendi' => (t('Təsdiqlənib'), Icons.check_circle, AppTheme.ugur),
       _ => (_hesabat.status, Icons.info_outline, scheme.outline),
     };
 
@@ -170,12 +168,12 @@ class _HesabatFormaState extends State<_HesabatForma> {
                 color: scheme.secondaryContainer,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Text('Menecerin şərhi: ${_hesabat.serh}'),
+              child: Text('${t('Menecerin şərhi')}: ${_hesabat.serh}'),
             ),
           ],
           if (!_hesabat.redakteOlunaBiler) ...[
             const SizedBox(height: 8),
-            const Text('Bu hesabat artıq dəyişdirilə bilməz.'),
+            Text(t('Bu hesabat artıq dəyişdirilə bilməz.')),
           ],
         ],
       ),
@@ -234,14 +232,14 @@ class _HesabatFormaState extends State<_HesabatForma> {
             Expanded(
               child: OutlinedButton(
                 onPressed: _aktiv && _deyisib ? _saxla : null,
-                child: const Text('Yadda saxla'),
+                child: Text(t('Yadda saxla')),
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: FilledButton(
                 onPressed: _aktiv ? _gonder : null,
-                child: const Text('Göndər'),
+                child: Text(t('Göndər')),
               ),
             ),
           ],
@@ -276,9 +274,9 @@ class _HesabatFormaState extends State<_HesabatForma> {
     }
     if (gorunenler.isEmpty) {
       elementler.add(
-        const Padding(
+        Padding(
           padding: EdgeInsets.all(24),
-          child: Center(child: Text('Heç nə tapılmadı')),
+          child: Center(child: Text(t('Heç nə tapılmadı'))),
         ),
       );
     }
@@ -289,9 +287,9 @@ class _HesabatFormaState extends State<_HesabatForma> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: TextField(
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               prefixIcon: Icon(Icons.search),
-              hintText: 'Həkim axtar',
+              hintText: t('Həkim axtar'),
               border: OutlineInputBorder(),
               isDense: true,
             ),
@@ -328,8 +326,9 @@ class SayDuzenle extends StatefulWidget {
 }
 
 class _SayDuzenleState extends State<SayDuzenle> {
-  late final TextEditingController _c =
-      TextEditingController(text: '${widget.deyer}');
+  late final TextEditingController _c = TextEditingController(
+    text: '${widget.deyer}',
+  );
 
   @override
   void didUpdateWidget(SayDuzenle kohne) {
@@ -381,8 +380,7 @@ class _SayDuzenleState extends State<SayDuzenle> {
           ),
         ),
         IconButton.outlined(
-          onPressed:
-              widget.aktiv ? () => _deyis(widget.deyer + 1) : null,
+          onPressed: widget.aktiv ? () => _deyis(widget.deyer + 1) : null,
           icon: const Icon(Icons.add),
         ),
       ],

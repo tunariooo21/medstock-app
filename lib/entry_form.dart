@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import 'api_client.dart';
 import 'entry_service.dart';
+import 'l10n.dart';
 import 'report_models.dart';
 import 'stock_models.dart';
 import 'theme/app_theme.dart';
@@ -117,20 +118,20 @@ class _QeydFormuState extends State<_QeydFormu> {
   }
 
   String get _novAdi => switch (_novu) {
-        _Novu.satis => 'Satış',
-        _Novu.resept => 'Resept',
-        _Novu.geriQaytarma => 'Geri qaytarma',
-      };
+    _Novu.satis => t('satis'),
+    _Novu.resept => t('resept'),
+    _Novu.geriQaytarma => t('geri_qaytarma'),
+  };
 
   Future<void> _saxla() async {
     final noqteId = _noqteId;
     final dermanId = _dermanId;
-    if (noqteId == null) return setState(() => _xeta = 'Aptek və ya depo seç');
-    if (dermanId == null) return setState(() => _xeta = 'Dərman seç');
+    if (noqteId == null) return setState(() => _xeta = t('aptek_depo_sec'));
+    if (dermanId == null) return setState(() => _xeta = t('derman_sec'));
     final say = int.tryParse(_say.text.trim()) ?? 0;
-    if (say <= 0) return setState(() => _xeta = 'Say 0-dan böyük olmalıdır');
+    if (say <= 0) return setState(() => _xeta = t('say_boyuk_olmalidir'));
     if (_novu == _Novu.resept && _hekimId == null) {
-      return setState(() => _xeta = 'Həkim seç');
+      return setState(() => _xeta = t('hekim_sec'));
     }
     setState(() => _xeta = null);
 
@@ -142,41 +143,44 @@ class _QeydFormuState extends State<_QeydFormu> {
     final tesdiq = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Qeyd yazılsın?'),
+        title: Text(t('qeyd_yazilsin')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('${noqte.ad} · ${derman.ad}'),
-            Text('$_novAdi · $say ədəd · ${_gosterTarix(_tarix)}'),
+            Text('$_novAdi · $say ${t('eded')} · ${_gosterTarix(_tarix)}'),
             if (xeberdarliq) ...[
               const SizedBox(height: 12),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.warning_amber_rounded,
-                      color: AppTheme.azQalib, size: 20),
+                  const Icon(
+                    Icons.warning_amber_rounded,
+                    color: AppTheme.azQalib,
+                    size: 20,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Diqqət: qalıq $qaliq, satış $say. Qalıq mənfi olacaq.',
+                      t('qaliq_menfi_xeberdarliq').replaceAll('{qaliq}', '$qaliq').replaceAll('{say}', '$say'),
                     ),
                   ),
                 ],
               ),
             ],
             const SizedBox(height: 12),
-            const Text('Yazılan qeyd sonradan dəyişdirilə bilməz.'),
+            Text(t('qeyd_deyisdirilmir')),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Ləğv et'),
+            child: Text(t('legv_et')),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Yaz'),
+            child: Text(t('yaz')),
           ),
         ],
       ),
@@ -194,7 +198,7 @@ class _QeydFormuState extends State<_QeydFormu> {
           say: say,
           tarix: _iso(_tarix),
         );
-        mesaj = 'Resept yazıldı';
+        mesaj = t('resept_yazildi');
       } else {
         final yeniQaliq = await EntryServisi.hereketYaz(
           noqteId: noqteId,
@@ -204,7 +208,7 @@ class _QeydFormuState extends State<_QeydFormu> {
           tarix: _iso(_tarix),
           sebeb: _novu == _Novu.geriQaytarma ? _sebeb.text.trim() : null,
         );
-        mesaj = '$_novAdi yazıldı. Yeni qalıq: $yeniQaliq';
+        mesaj = t('qeyd_yazildi_yeni_qaliq').replaceAll('{nov}', _novAdi).replaceAll('{qaliq}', '$yeniQaliq');
       }
       if (!mounted) return;
       final messenger = ScaffoldMessenger.of(context);
@@ -223,23 +227,28 @@ class _QeydFormuState extends State<_QeydFormu> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Qeyd əlavə et', style: Theme.of(context).textTheme.titleLarge),
+            Text(
+              t('qeyd_elave_et'),
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
               child: SegmentedButton<_Novu>(
-                segments: const [
-                  ButtonSegment(value: _Novu.satis, label: Text('Satış')),
-                  ButtonSegment(value: _Novu.resept, label: Text('Resept')),
+                segments: [
+                  ButtonSegment(value: _Novu.satis, label: Text(t('satis'))),
+                  ButtonSegment(value: _Novu.resept, label: Text(t('resept'))),
                   ButtonSegment(
                     value: _Novu.geriQaytarma,
-                    label: Text('Geri qaytarma'),
+                    label: Text(t('geri_qaytarma')),
                   ),
                 ],
                 selected: {_novu},
@@ -256,14 +265,14 @@ class _QeydFormuState extends State<_QeydFormu> {
             const SizedBox(height: 12),
             DropdownMenu<int>(
               initialSelection: _noqteId,
-              label: const Text('Aptek / depo'),
+              label: Text(t('aptek_depo')),
               expandedInsets: EdgeInsets.zero,
               requestFocusOnTap: false,
               dropdownMenuEntries: [
                 for (final p in widget.noqteler)
                   DropdownMenuEntry(
                     value: p.id,
-                    label: '${p.ad} (${p.novu == 'depo' ? 'Depo' : 'Aptek'})',
+                    label: '${p.ad} (${p.novu == 'depo' ? t('depo') : t('aptek')})',
                   ),
               ],
               onSelected: (v) => setState(() => _noqteId = v),
@@ -271,7 +280,7 @@ class _QeydFormuState extends State<_QeydFormu> {
             const SizedBox(height: 12),
             DropdownMenu<int>(
               initialSelection: _dermanId,
-              label: const Text('Dərman'),
+              label: Text(t('derman')),
               expandedInsets: EdgeInsets.zero,
               requestFocusOnTap: false,
               dropdownMenuEntries: [
@@ -297,7 +306,7 @@ class _QeydFormuState extends State<_QeydFormu> {
                 LengthLimitingTextInputFormatter(6),
               ],
               decoration: InputDecoration(
-                labelText: _novu == _Novu.resept ? 'Resept sayı' : 'Say',
+                labelText: _novu == _Novu.resept ? t('resept_sayi') : t('say'),
                 border: const OutlineInputBorder(),
               ),
             ),
@@ -305,7 +314,7 @@ class _QeydFormuState extends State<_QeydFormu> {
             OutlinedButton.icon(
               onPressed: _tarixSec,
               icon: const Icon(Icons.calendar_today, size: 18),
-              label: Text('Tarix: ${_gosterTarix(_tarix)}'),
+              label: Text('${t('tarix')}: ${_gosterTarix(_tarix)}'),
             ),
             if (_novu == _Novu.resept) ...[
               const SizedBox(height: 12),
@@ -319,12 +328,12 @@ class _QeydFormuState extends State<_QeydFormu> {
                     );
                   }
                   if (snap.hasError) {
-                    return const Text('Həkim siyahısı yüklənmədi');
+                    return Text(t('hekimler_yuklenmedi'));
                   }
                   final hekimler = snap.data ?? [];
                   return DropdownMenu<int>(
                     initialSelection: _hekimId,
-                    label: const Text('Həkim'),
+                    label: Text(t('hekim')),
                     expandedInsets: EdgeInsets.zero,
                     requestFocusOnTap: false,
                     dropdownMenuEntries: [
@@ -344,9 +353,9 @@ class _QeydFormuState extends State<_QeydFormu> {
               TextField(
                 controller: _sebeb,
                 maxLength: 300,
-                decoration: const InputDecoration(
-                  labelText: 'Səbəb (istəyə görə)',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: t('sebeb_isteye_gore'),
+                  border: const OutlineInputBorder(),
                 ),
               ),
             ],
@@ -365,7 +374,7 @@ class _QeydFormuState extends State<_QeydFormu> {
                         width: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text('Yadda saxla'),
+                    : Text(t('yadda_saxla')),
               ),
             ),
           ],

@@ -1,138 +1,183 @@
 import 'package:flutter/material.dart';
+
+import 'app_state.dart';
+import 'l10n.dart';
 import 'stock_screen.dart';
 import 'auth_service.dart';
 import 'profile_screen.dart';
-import 'widgets/state_widgets.dart';
 import 'charts_screen.dart';
 import 'workers_screen.dart';
 import 'manager_reports_screen.dart';
 import 'home_screen.dart';
-
-
-
+import 'notifications_screen.dart';
 
 class _Tab {
-  final String label;
+  final String Function() label;
   final IconData icon;
   final IconData selectedIcon;
   final Widget page;
-  const _Tab(this.label, this.icon, this.selectedIcon, this.page);
+  _Tab(this.label, this.icon, this.selectedIcon, this.page);
 }
 
 class HomeShell extends StatefulWidget {
   final Session session;
   final VoidCallback onLogout;
-  const HomeShell({super.key, required this.session, required this.onLogout});
+  final void Function(Session)? onSessionChanged;
+  const HomeShell({
+    super.key,
+    required this.session,
+    required this.onLogout,
+    this.onSessionChanged,
+  });
 
   @override
   State<HomeShell> createState() => _HomeShellState();
 }
 
-class _HomeShellState extends State<HomeShell> {
+class _HomeShellState extends State<HomeShell>
+    with SingleTickerProviderStateMixin {
   int _index = 0;
+  int _geriQaytarmaAcari = 0;
+  late final TabController _hesabatlar;
+
+  @override
+  void initState() {
+    super.initState();
+    _hesabatlar = TabController(length: 4, vsync: this);
+  }
+
+  void _geriQaytarmalaraKech() {
+    _hesabatlar.index = 2;
+    setState(() {
+      _index = 2;
+      _geriQaytarmaAcari++;
+    });
+  }
+
+  @override
+  void dispose() {
+    _hesabatlar.dispose();
+    super.dispose();
+  }
 
   List<_Tab> _tablar() {
     final profil = _Tab(
-      'Profil',
+      () => t('profil'),
       Icons.person_outline,
       Icons.person,
-      ProfilEkrani(session: widget.session, onLogout: widget.onLogout),
+      ProfilEkrani(
+        session: widget.session,
+        onLogout: widget.onLogout,
+        onSessionChanged: widget.onSessionChanged,
+      ),
     );
 
     switch (widget.session.rol) {
       case 'representative':
         return [
-          const _Tab('Ana səhifə', Icons.home_outlined, Icons.home,
-              AnaSehife()),
-          const _Tab('Stok', Icons.inventory_2_outlined, Icons.inventory_2,
-              StokEkrani()),
-          const _Tab('Hesabat', Icons.bar_chart_outlined, Icons.bar_chart,
-              QrafiklerEkrani()),
+          _Tab(
+            () => t('ana_sehife'),
+            Icons.home_outlined,
+            Icons.home,
+            AnaSehife(
+              ad: widget.session.ad,
+              aktiv: _index == 0,
+              onStokaKech: () => setState(() => _index = 1),
+            ),
+          ),
+          _Tab(
+            () => t('stok'),
+            Icons.inventory_2_outlined,
+            Icons.inventory_2,
+            StokEkrani(aktiv: _index == 1),
+          ),
+          _Tab(
+            () => t('hesabat'),
+            Icons.bar_chart_outlined,
+            Icons.bar_chart,
+            QrafiklerEkrani(),
+          ),
           profil,
         ];
       case 'manager':
         return [
-          const _Tab('Ana səhifə', Icons.home_outlined, Icons.home,
-              AnaSehife(menecer: true)),
-          const _Tab('İşçilər', Icons.groups_outlined, Icons.groups,
-              IscilerEkrani()),
-          const _Tab('Hesabatlar', Icons.bar_chart_outlined, Icons.bar_chart,
-              MenecerHesabatlarEkrani()),
+          _Tab(
+            () => t('ana_sehife'),
+            Icons.home_outlined,
+            Icons.home,
+            AnaSehife(
+              ad: widget.session.ad,
+              menecer: true,
+              aktiv: _index == 0,
+              onGeriQaytarmayaKech: _geriQaytarmalaraKech,
+            ),
+          ),
+          _Tab(
+            () => t('isciler'),
+            Icons.groups_outlined,
+            Icons.groups,
+            IscilerEkrani(),
+          ),
+          _Tab(
+            () => t('hesabatlar'),
+            Icons.bar_chart_outlined,
+            Icons.bar_chart,
+            MenecerHesabatlarEkrani(
+              controller: _hesabatlar,
+              geriQaytarmaAcari: _geriQaytarmaAcari,
+            ),
+          ),
           profil,
         ];
       default:
-        // Bu rol üçün ekranlar təyin olunmayıb: yalnız profil göstərilir.
         return [profil];
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final tablar = _tablar();
-    final i = _index.clamp(0, tablar.length - 1);
-
-    return Scaffold(
-      appBar: AppBar(title: Text(tablar[i].label)),
-      body: IndexedStack(
-        index: i,
-        children: tablar.map((t) => t.page).toList(),
-      ),
-      bottomNavigationBar: tablar.length < 2
-          ? null
-          : NavigationBar(
-              selectedIndex: i,
-              onDestinationSelected: (v) => setState(() => _index = v),
-              destinations: [
-                for (final t in tablar)
-                  NavigationDestination(
-                    icon: Icon(t.icon),
-                    selectedIcon: Icon(t.selectedIcon),
-                    label: t.label,
-                  ),
-              ],
-            ),
-    );
-  }
-}
-
-/// Müvəqqəti demo ekran: dörd vəziyyəti (yüklənir, server oyanır, xəta, boş)
-/// göstərir. M3-dən başlayaraq real ekranlarla əvəz olunacaq.
-class BosEkran extends StatefulWidget {
-  final String ad;
-  const BosEkran(this.ad, {super.key});
-
-  @override
-  State<BosEkran> createState() => _BosEkranState();
-}
-
-class _BosEkranState extends State<BosEkran> {
-  int _cehd = 0;
-  int _acar = 0;
-
-  // 1-ci cəhd xəta, 2-ci boş, 3-cü məlumatla bitir
-  Future<List<String>> _yukle() async {
-    _cehd++;
-    if (_cehd == 1) {
-      await Future.delayed(const Duration(seconds: 7));
-      throw Exception('sınaq xətası');
-    }
-    await Future.delayed(const Duration(seconds: 1));
-    return _cehd == 2 ? <String>[] : ['Nümunə məlumat'];
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AsyncGorunus<List<String>>(
-      key: ValueKey(_acar),
-      yukle: _yukle,
-      bosdur: (siyahi) => siyahi.isEmpty,
-      bosMetn: '${widget.ad} üçün hələ qeyd yoxdur',
-      bosDuymeAdi: 'Yenilə',
-      bosDuymeEmeliyyati: () => setState(() => _acar++),
-      qur: (context, siyahi) => Center(
-        child: Text('${widget.ad} ekranı (tezliklə)',
-            style: Theme.of(context).textTheme.titleMedium),
-      ),
+    return AnimatedBuilder(
+      animation: AppState.instance,
+      builder: (context, _) {
+        final tablar = _tablar();
+        final i = _index.clamp(0, tablar.length - 1);
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(tablar[i].label()),
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: BildirisDugmesi(
+                  key: ValueKey(widget.session.login),
+                  menecer: widget.session.rol == 'manager',
+                ),
+              ),
+            ],
+          ),
+          body: IndexedStack(
+            index: i,
+            children: [
+              for (var j = 0; j < tablar.length; j++)
+                HeroMode(enabled: j == i, child: tablar[j].page),
+            ],
+          ),
+          bottomNavigationBar: tablar.length < 2
+              ? null
+              : NavigationBar(
+                  selectedIndex: i,
+                  labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+                  onDestinationSelected: (v) => setState(() => _index = v),
+                  destinations: [
+                    for (final tb in tablar)
+                      NavigationDestination(
+                        icon: Icon(tb.icon),
+                        selectedIcon: Icon(tb.selectedIcon),
+                        label: tb.label(),
+                      ),
+                  ],
+                ),
+        );
+      },
     );
   }
 }

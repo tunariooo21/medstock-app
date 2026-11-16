@@ -1,3 +1,5 @@
+import 'l10n.dart' hide ayAdi;
+
 import 'package:flutter/material.dart';
 
 import 'api_client.dart';
@@ -34,9 +36,9 @@ class _IscilerEkraniState extends State<IscilerEkrani> {
   Future<void> _ac(IsciSetiri isci) async {
     final id = isci.hesabatId;
     if (id == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Hesabat hələ göndərilməyib')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(t('Hesabat hələ göndərilməyib'))));
       return;
     }
     final deyisdi = await Navigator.of(context).push<bool>(
@@ -54,12 +56,14 @@ class _IscilerEkraniState extends State<IscilerEkrani> {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
           child: DropdownMenu<String>(
+            key: ValueKey('month-${Localizations.localeOf(context)}'),
             initialSelection: _ay,
-            label: const Text('Ay'),
+            label: Text(t('Ay')),
             expandedInsets: EdgeInsets.zero,
             requestFocusOnTap: false,
             dropdownMenuEntries: [
-              for (final a in _aylar) DropdownMenuEntry(value: a, label: ayAdi(a)),
+              for (final a in _aylar)
+                DropdownMenuEntry(value: a, label: ayAdi(a)),
             ],
             onSelected: (v) {
               if (v != null) setState(() => _ay = v);
@@ -72,7 +76,7 @@ class _IscilerEkraniState extends State<IscilerEkrani> {
             yukle: () => MenecerServisi.isciler(_ay),
             bosdur: (l) => l.isEmpty,
             bosIkon: Icons.groups_outlined,
-            bosMetn: 'Sənə bağlı işçi yoxdur. Admindən xahiş et.',
+            bosMetn: t('Sənə bağlı işçi yoxdur. Admindən xahiş et.'),
             qur: (context, siyahi) => ListView(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               children: [
@@ -97,13 +101,13 @@ class _IscilerEkraniState extends State<IscilerEkrani> {
                               children: [
                                 Text(
                                   '${i.cemi}',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleLarge
+                                  style: Theme.of(context).textTheme.titleLarge
                                       ?.copyWith(fontWeight: FontWeight.bold),
                                 ),
-                                Text('resept',
-                                    style: Theme.of(context).textTheme.bodySmall),
+                                Text(
+                                  t('resept'),
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
                               ],
                             ),
                       onTap: () => _ac(i),
@@ -152,18 +156,20 @@ class _HesabatDetalSehifesiState extends State<HesabatDetalSehifesi> {
     final tesdiq = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Hesabat təsdiqlənsin?'),
-        content: const Text(
-          'Təsdiqləndikdən sonra hesabat dəyişdirilə və geri qaytarıla bilməz.',
+        title: Text(t('Hesabat təsdiqlənsin?')),
+        content: Text(
+          t(
+            'Təsdiqləndikdən sonra hesabat dəyişdirilə və geri qaytarıla bilməz.',
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Ləğv et'),
+            child: Text(t('Ləğv et')),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Təsdiqlə'),
+            child: Text(t('Təsdiqlə')),
           ),
         ],
       ),
@@ -176,9 +182,7 @@ class _HesabatDetalSehifesiState extends State<HesabatDetalSehifesi> {
       if (!mounted) return;
       final messenger = ScaffoldMessenger.of(context);
       Navigator.of(context).pop(true);
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Hesabat təsdiqləndi')),
-      );
+      messenger.showSnackBar(SnackBar(content: Text(t('Hesabat təsdiqləndi'))));
     } on ApiException catch (e) {
       _bildir(e.mesaj, xeta: true);
       if (mounted) setState(() => _acar++);
@@ -201,7 +205,7 @@ class _HesabatDetalSehifesiState extends State<HesabatDetalSehifesi> {
       final messenger = ScaffoldMessenger.of(context);
       Navigator.of(context).pop(true);
       messenger.showSnackBar(
-        const SnackBar(content: Text('Hesabat şərhlə geri qaytarıldı')),
+        SnackBar(content: Text(t('Hesabat şərhlə geri qaytarıldı'))),
       );
     } on ApiException catch (e) {
       _bildir(e.mesaj, xeta: true);
@@ -231,14 +235,14 @@ class _HesabatDetalSehifesiState extends State<HesabatDetalSehifesi> {
                       Expanded(
                         child: OutlinedButton(
                           onPressed: _mesgul ? null : _geriQaytar,
-                          child: const Text('Geri qaytar'),
+                          child: Text(t('Geri qaytar')),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: FilledButton(
                           onPressed: _mesgul ? null : _tesdiqle,
-                          child: const Text('Təsdiqlə'),
+                          child: Text(t('Təsdiqlə')),
                         ),
                       ),
                     ],
@@ -267,9 +271,7 @@ class _Detal extends StatelessWidget {
       children: [
         Row(
           children: [
-            Expanded(
-              child: Text(ayAdi(d.ay), style: tema.headlineSmall),
-            ),
+            Expanded(child: Text(ayAdi(d.ay), style: tema.headlineSmall)),
             StatusNisani(status: d.status),
           ],
         ),
@@ -282,7 +284,7 @@ class _Detal extends StatelessWidget {
               color: scheme.secondaryContainer,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Text('Sənin şərhin: ${d.serh}'),
+            child: Text('${t('Sənin şərhin')}: ${d.serh}'),
           ),
         ],
         const SizedBox(height: 12),
@@ -292,9 +294,9 @@ class _Detal extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Dərman üzrə cəmi', style: tema.titleMedium),
+                Text(t('Dərman üzrə cəmi'), style: tema.titleMedium),
                 const SizedBox(height: 8),
-                if (d.dermanlar.isEmpty) const Text('Qeyd yoxdur'),
+                if (d.dermanlar.isEmpty) Text(t('Qeyd yoxdur')),
                 for (final x in d.dermanlar)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4),
@@ -312,8 +314,9 @@ class _Detal extends StatelessWidget {
                         Expanded(child: Text(x.ad)),
                         Text(
                           '${x.cemi}',
-                          style: tema.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.bold),
+                          style: tema.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ],
                     ),
@@ -321,10 +324,12 @@ class _Detal extends StatelessWidget {
                 const Divider(),
                 Row(
                   children: [
-                    const Expanded(child: Text('Ümumi')),
+                    Expanded(child: Text(t('Ümumi'))),
                     Text(
                       '${d.cemi}',
-                      style: tema.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                      style: tema.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
@@ -333,7 +338,7 @@ class _Detal extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        Text('Həkimlər üzrə', style: tema.titleMedium),
+        Text(t('Həkimlər üzrə'), style: tema.titleMedium),
         const SizedBox(height: 8),
         for (final h in d.hekimler)
           Card(
@@ -348,14 +353,17 @@ class _Detal extends StatelessWidget {
                       Expanded(child: Text(h.ad, style: tema.titleSmall)),
                       Text(
                         '${h.cemi}',
-                        style: tema.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.bold),
+                        style: tema.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ],
                   ),
                   Text(
-                    [h.clinicAd, if ((h.ixtisas ?? '').isNotEmpty) h.ixtisas!]
-                        .join(' · '),
+                    [
+                      h.clinicAd,
+                      if ((h.ixtisas ?? '').isNotEmpty) h.ixtisas!,
+                    ].join(' · '),
                     style: tema.bodySmall,
                   ),
                   const SizedBox(height: 8),
@@ -378,7 +386,9 @@ class _Detal extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 6),
-                            Text('${dermanXeritesi[e.key]?.ad ?? '?'}: ${e.value}'),
+                            Text(
+                              '${dermanXeritesi[e.key]?.ad ?? '?'}: ${e.value}',
+                            ),
                           ],
                         ),
                     ],
@@ -412,14 +422,14 @@ class _SerhDialogState extends State<_SerhDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Hesabatı geri qaytar'),
+      title: Text(t('Hesabatı geri qaytar')),
       content: TextField(
         controller: _c,
         autofocus: true,
         maxLength: 500,
         maxLines: 3,
         decoration: InputDecoration(
-          labelText: 'Nümayəndəyə şərh',
+          labelText: t('Nümayəndəyə şərh'),
           border: const OutlineInputBorder(),
           errorText: _xeta,
         ),
@@ -427,18 +437,18 @@ class _SerhDialogState extends State<_SerhDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Ləğv et'),
+          child: Text(t('Ləğv et')),
         ),
         FilledButton(
           onPressed: () {
             final metn = _c.text.trim();
             if (metn.isEmpty) {
-              setState(() => _xeta = 'Şərh yaz');
+              setState(() => _xeta = t('Şərh yaz'));
               return;
             }
             Navigator.pop(context, metn);
           },
-          child: const Text('Geri qaytar'),
+          child: Text(t('Geri qaytar')),
         ),
       ],
     );

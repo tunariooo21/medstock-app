@@ -1,3 +1,5 @@
+import 'l10n.dart' hide ayAdi;
+
 import 'dart:math' as math;
 
 import 'package:fl_chart/fl_chart.dart';
@@ -9,12 +11,7 @@ import 'summary_service.dart';
 import 'theme/app_theme.dart';
 import 'widgets/state_widgets.dart';
 
-const _qisaAylar = [
-  'Yan', 'Fev', 'Mar', 'Apr', 'May', 'İyn',
-  'İyl', 'Avq', 'Sen', 'Okt', 'Noy', 'Dek',
-];
-
-String _qisaAy(String ay) => _qisaAylar[int.parse(ay.split('-')[1]) - 1];
+String _qisaAy(String ay) => L10n.qisaAyAdi(ay);
 
 List<String> _sonAylar(int say) {
   final indi = DateTime.now();
@@ -33,7 +30,7 @@ class HesabatDoldurSehifesi extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Hesabatı doldur')),
+      appBar: AppBar(title: Text(t('Hesabatı doldur'))),
       body: const HesabatEkrani(),
     );
   }
@@ -70,9 +67,8 @@ class _QrafiklerEkraniState extends State<QrafiklerEkrani> {
   }
 
   Future<void> _doldur() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const HesabatDoldurSehifesi()),
-    );
+    await Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const HesabatDoldurSehifesi()));
     if (mounted) setState(() => _acar++);
   }
 
@@ -86,6 +82,7 @@ class _QrafiklerEkraniState extends State<QrafiklerEkrani> {
             children: [
               Expanded(
                 child: DropdownMenu<String>(
+                  key: ValueKey('month-${Localizations.localeOf(context)}'),
                   initialSelection: _ay,
                   expandedInsets: EdgeInsets.zero,
                   requestFocusOnTap: false,
@@ -101,17 +98,20 @@ class _QrafiklerEkraniState extends State<QrafiklerEkrani> {
               const SizedBox(width: 8),
               Expanded(
                 child: DropdownMenu<int>(
-                  key: ValueKey(_regionlar.length),
+                  key: ValueKey(
+                    '${_regionlar.length}-${Localizations.localeOf(context)}',
+                  ),
                   initialSelection: _region ?? 0,
                   expandedInsets: EdgeInsets.zero,
                   requestFocusOnTap: false,
                   dropdownMenuEntries: [
-                    const DropdownMenuEntry(value: 0, label: 'Bütün regionlar'),
+                    DropdownMenuEntry(value: 0, label: t('Bütün regionlar')),
                     for (final r in _regionlar)
                       DropdownMenuEntry(value: r.id, label: r.ad),
                   ],
-                  onSelected: (v) =>
-                      setState(() => _region = (v == null || v == 0) ? null : v),
+                  onSelected: (v) => setState(
+                    () => _region = (v == null || v == 0) ? null : v,
+                  ),
                 ),
               ),
             ],
@@ -124,9 +124,9 @@ class _QrafiklerEkraniState extends State<QrafiklerEkrani> {
             bosdur: (x) => x.hecNeYoxdur,
             bosIkon: Icons.bar_chart,
             bosMetn: widget.menecer
-                ? 'Bu dövr üçün göndərilmiş hesabat yoxdur'
-                : 'Bu dövr üçün hələ qeyd yoxdur',
-            bosDuymeAdi: widget.menecer ? null : 'Hesabatı doldur',
+                ? t('Bu dövr üçün göndərilmiş hesabat yoxdur')
+                : t('Bu dövr üçün hələ qeyd yoxdur'),
+            bosDuymeAdi: widget.menecer ? null : t('Hesabatı doldur'),
             bosDuymeEmeliyyati: widget.menecer ? null : _doldur,
             qur: (context, x) => _Kartlar(xulase: x, menecer: widget.menecer),
           ),
@@ -141,7 +141,7 @@ class _QrafiklerEkraniState extends State<QrafiklerEkrani> {
           : FloatingActionButton.extended(
               onPressed: _doldur,
               icon: const Icon(Icons.edit_note),
-              label: const Text('Hesabatı doldur'),
+              label: Text(t('Hesabatı doldur')),
             ),
       body: govde,
     );
@@ -161,11 +161,11 @@ class _Kartlar extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
       children: [
         _Kart(
-          basliq: 'Ümumi göstəricilər',
+          basliq: t('Ümumi göstəricilər'),
           child: _UmumiGostericiler(dermanlar: x.dermanlar),
         ),
         _Kart(
-          basliq: 'Dərman üzrə',
+          basliq: t('Dərman üzrə'),
           child: _SutunQrafiki(
             dilimler: [
               for (final d in x.dermanlar)
@@ -174,25 +174,29 @@ class _Kartlar extends StatelessWidget {
           ),
         ),
         _Kart(
-          basliq: 'Ən çox yazan həkimlər',
+          basliq: t('Ən çox yazan həkimlər'),
           child: _HekimlerZolagi(hekimler: x.hekimler, dermanlar: x.dermanlar),
         ),
-        _Kart(basliq: 'Son 6 ay', child: _XettQrafiki(aylar: x.son6Ay)),
+        _Kart(
+          basliq: t('Son 6 ay'),
+          child: _XettQrafiki(aylar: x.son6Ay),
+        ),
         if (menecer && x.iscilar != null)
           _Kart(
-            basliq: 'İşçilər üzrə',
+            basliq: t('İşçilər üzrə'),
             child: _TekZolaqlar(
-              basliq: 'Bütün işçilər',
+              basliq: t('Bütün işçilər'),
               siyahi: x.iscilar!,
-              bosMetn: 'Bu ay göndərilmiş hesabat yoxdur',
+              bosMetn: t('Bu ay göndərilmiş hesabat yoxdur'),
             ),
           ),
         if (menecer && x.regionlar != null)
           _Kart(
-            basliq: 'Regionlar üzrə',
+            basliq: t('Regionlar üzrə'),
             child: _SutunQrafiki(
               dilimler: [
-                for (final r in x.regionlar!.take(6)) _Dilim(r.ad, r.cemi, esas),
+                for (final r in x.regionlar!.take(6))
+                  _Dilim(r.ad, r.cemi, esas),
               ],
             ),
           ),
@@ -262,7 +266,7 @@ class _UmumiGostericiler extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (dermanlar.isEmpty) return const Text('Dərman yoxdur');
+    if (dermanlar.isEmpty) return Text(t('Dərman yoxdur'));
     return LayoutBuilder(
       builder: (context, c) {
         final n = math.min(dermanlar.length, 3);
@@ -272,7 +276,10 @@ class _UmumiGostericiler extends StatelessWidget {
           runSpacing: 8,
           children: [
             for (final d in dermanlar)
-              SizedBox(width: eni, child: _Gosterici(d: d)),
+              SizedBox(
+                width: eni,
+                child: _Gosterici(d: d),
+              ),
           ],
         );
       },
@@ -309,7 +316,11 @@ class _Gosterici extends StatelessWidget {
               ),
               const SizedBox(width: 6),
               Expanded(
-                child: Text(d.ad, overflow: TextOverflow.ellipsis, style: tema.bodySmall),
+                child: Text(
+                  d.ad,
+                  overflow: TextOverflow.ellipsis,
+                  style: tema.bodySmall,
+                ),
               ),
             ],
           ),
@@ -334,13 +345,17 @@ class _Ferq extends StatelessWidget {
   Widget build(BuildContext context) {
     final stil = Theme.of(context).textTheme.bodySmall;
     final f = faiz;
-    if (f == null) return Text('Keçən ay yoxdur', style: stil);
-    if (f == 0) return Text('Dəyişməyib', style: stil);
+    if (f == null) return Text(t('Keçən ay yoxdur'), style: stil);
+    if (f == 0) return Text(t('Dəyişməyib'), style: stil);
     final artim = f > 0;
-    final reng = artim ? Colors.green.shade700 : Colors.red.shade700;
+    final reng = artim ? AppTheme.ugur : Colors.red.shade700;
     return Row(
       children: [
-        Icon(artim ? Icons.arrow_upward : Icons.arrow_downward, size: 14, color: reng),
+        Icon(
+          artim ? Icons.arrow_upward : Icons.arrow_downward,
+          size: 14,
+          color: reng,
+        ),
         const SizedBox(width: 2),
         Text(
           '${f.abs().toStringAsFixed(0)}%',
@@ -359,12 +374,11 @@ class _SutunQrafiki extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (dilimler.isEmpty) return const Text('Məlumat yoxdur');
+    if (dilimler.isEmpty) return Text(t('Məlumat yoxdur'));
     final enCox = dilimler.map((d) => d.deyer).reduce(math.max);
     final maxY = math.max(5, enCox * 1.3).toDouble();
-    final reqemStili = Theme.of(context)
-            .textTheme
-            .labelLarge
+    final reqemStili =
+        Theme.of(context).textTheme.labelLarge
             ?.copyWith(fontWeight: FontWeight.bold) ??
         const TextStyle(fontWeight: FontWeight.bold);
 
@@ -399,8 +413,9 @@ class _SutunQrafiki extends StatelessWidget {
                         toY: dilimler[i].deyer.toDouble(),
                         color: dilimler[i].reng,
                         width: 28,
-                        borderRadius:
-                            const BorderRadius.vertical(top: Radius.circular(6)),
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(6),
+                        ),
                       ),
                     ],
                   ),
@@ -460,8 +475,10 @@ class _HekimlerZolagi extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (hekimler.isEmpty) return const Text('Bu ay üçün həkim qeydi yoxdur');
-    final renglar = {for (final d in dermanlar) d.id: AppTheme.dermanRengi(d.sira)};
+    if (hekimler.isEmpty) return Text(t('Bu ay üçün həkim qeydi yoxdur'));
+    final renglar = {
+      for (final d in dermanlar) d.id: AppTheme.dermanRengi(d.sira),
+    };
     final ilk5 = hekimler.take(5).toList();
     final enCox = math.max(1, ilk5.first.cemi);
 
@@ -526,15 +543,11 @@ class _HekimlerZolagi extends StatelessWidget {
           Align(
             alignment: Alignment.centerRight,
             child: TextButton(
-              onPressed: () => _hamisiniGoster(
-                context,
-                'Bütün həkimlər',
-                [
-                  for (final h in hekimler)
-                    AdCemi(id: h.id, ad: h.ad, cemi: h.cemi),
-                ],
-              ),
-              child: Text('Hamısına bax (${hekimler.length})'),
+              onPressed: () => _hamisiniGoster(context, t('Bütün həkimlər'), [
+                for (final h in hekimler)
+                  AdCemi(id: h.id, ad: h.ad, cemi: h.cemi),
+              ]),
+              child: Text('${t('Hamısına bax')} (${hekimler.length})'),
             ),
           ),
       ],
@@ -550,7 +563,7 @@ class _XettQrafiki extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (aylar.length < 2) return const Text('Məlumat yoxdur');
+    if (aylar.length < 2) return Text(t('Məlumat yoxdur'));
     final scheme = Theme.of(context).colorScheme;
     final tema = Theme.of(context).textTheme;
     final enCox = aylar.map((a) => a.cemi).fold<int>(0, math.max);
@@ -600,7 +613,9 @@ class _XettQrafiki extends StatelessWidget {
                     Text(_qisaAy(a.ay), style: tema.bodySmall),
                     Text(
                       '${a.cemi}',
-                      style: tema.labelLarge?.copyWith(fontWeight: FontWeight.bold),
+                      style: tema.labelLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
@@ -674,7 +689,7 @@ class _TekZolaqlar extends StatelessWidget {
             alignment: Alignment.centerRight,
             child: TextButton(
               onPressed: () => _hamisiniGoster(context, basliq, siyahi),
-              child: Text('Hamısına bax (${siyahi.length})'),
+              child: Text('${t('Hamısına bax')} (${siyahi.length})'),
             ),
           ),
       ],

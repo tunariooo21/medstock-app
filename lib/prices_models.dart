@@ -18,11 +18,11 @@ class QiymetSetri {
   });
 
   factory QiymetSetri.fromJson(Map<String, dynamic> j) => QiymetSetri(
-        id: j['id'] as int,
-        qiymet: (j['qiymet'] as num).toDouble(),
-        baslamaTarixi: j['baslama_tarixi'] as String,
-        kim: j['kim'] as String?,
-      );
+    id: j['id'] as int,
+    qiymet: (j['qiymet'] as num).toDouble(),
+    baslamaTarixi: j['baslama_tarixi'] as String,
+    kim: j['kim'] as String?,
+  );
 }
 
 class DermanQiymeti {

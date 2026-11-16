@@ -2,7 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-/// Yüklənir: boz "skelet" kartları (bütün ekranı bağlayan spinner yox).
+import '../l10n.dart';
+import '../theme/app_theme.dart';
+
+/// Yüklənir: parıldayan (shimmer) boz skelet kartları.
 class YuklenirSkelet extends StatefulWidget {
   final int say;
   const YuklenirSkelet({super.key, this.say = 3});
@@ -15,8 +18,8 @@ class _YuklenirSkeletState extends State<YuklenirSkelet>
     with SingleTickerProviderStateMixin {
   late final AnimationController _c = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 900),
-  )..repeat(reverse: true);
+    duration: const Duration(milliseconds: 1300),
+  )..repeat();
 
   @override
   void dispose() {
@@ -26,10 +29,16 @@ class _YuklenirSkeletState extends State<YuklenirSkelet>
 
   @override
   Widget build(BuildContext context) {
-    final reng = Theme.of(context).colorScheme.surfaceContainerHighest;
-    return FadeTransition(
-      opacity: Tween<double>(begin: 0.4, end: 1).animate(_c),
-      child: ListView.separated(
+    final baza = Theme.of(context).colorScheme.surfaceContainerHighest;
+    final isiq = Color.alphaBlend(
+      Colors.white.withValues(
+        alpha: Theme.of(context).brightness == Brightness.dark ? 0.08 : 0.72,
+      ),
+      baza,
+    );
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (context, _) => ListView.separated(
         padding: const EdgeInsets.all(16),
         physics: const NeverScrollableScrollPhysics(),
         itemCount: widget.say,
@@ -37,13 +46,28 @@ class _YuklenirSkeletState extends State<YuklenirSkelet>
         itemBuilder: (context, index) => Container(
           height: 96,
           decoration: BoxDecoration(
-            color: reng,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              colors: [baza, isiq, baza],
+              stops: const [0.25, 0.5, 0.75],
+              transform: _SursuyenGradient(_c.value),
+            ),
           ),
         ),
       ),
     );
   }
+}
+
+class _SursuyenGradient extends GradientTransform {
+  final double faiz;
+  const _SursuyenGradient(this.faiz);
+
+  @override
+  Matrix4 transform(Rect bounds, {TextDirection? textDirection}) =>
+      Matrix4.translationValues(bounds.width * (faiz * 2 - 1), 0, 0);
 }
 
 /// Server oyanır: Render pulsuz planında ilk sorğu uzun çəkə bilər.
@@ -52,26 +76,35 @@ class ServerOyanirZolagi extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      color: scheme.secondaryContainer,
-      child: Row(
-        children: [
-          const SizedBox(
-            height: 18,
-            width: 18,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'Server oyanır, bir az gözləyin…',
-              style: TextStyle(color: scheme.onSecondaryContainer),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF6E8),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFF3DFC0)),
+        ),
+        child: Row(
+          children: [
+            const SizedBox(
+              height: 18,
+              width: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Color(0xFFB17724),
+              ),
             ),
-          ),
-        ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                t('Server oyanır, bir az gözləyin…'),
+                style: const TextStyle(fontSize: 13, color: Color(0xFF8A5D17)),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -94,24 +127,12 @@ class BosHal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(ikon, size: 56, color: Theme.of(context).colorScheme.outline),
-            const SizedBox(height: 12),
-            Text(metn,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleMedium),
-            if (duymeAdi != null && duymeEmeliyyati != null) ...[
-              const SizedBox(height: 16),
-              FilledButton(onPressed: duymeEmeliyyati, child: Text(duymeAdi!)),
-            ],
-          ],
-        ),
-      ),
+    return _HalGorunusu(
+      ikon: ikon,
+      reng: AppTheme.esas(context),
+      basliq: metn,
+      duymeAdi: duymeAdi,
+      duymeEmeliyyati: duymeEmeliyyati,
     );
   }
 }
@@ -129,21 +150,65 @@ class XetaHali extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return _HalGorunusu(
+      ikon: Icons.wifi_off_rounded,
+      reng: Theme.of(context).colorScheme.error,
+      basliq: metn,
+      duymeAdi: 'Yenidən cəhd et',
+      duymeEmeliyyati: onYeniden,
+    );
+  }
+}
+
+class _HalGorunusu extends StatelessWidget {
+  final IconData ikon;
+  final Color reng;
+  final String basliq;
+  final String? duymeAdi;
+  final VoidCallback? duymeEmeliyyati;
+
+  const _HalGorunusu({
+    required this.ikon,
+    required this.reng,
+    required this.basliq,
+    this.duymeAdi,
+    this.duymeEmeliyyati,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final tema = Theme.of(context).textTheme;
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(28),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline,
-                size: 56, color: Theme.of(context).colorScheme.error),
-            const SizedBox(height: 12),
-            Text(metn,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 16),
-            FilledButton(
-                onPressed: onYeniden, child: const Text('Yenidən cəhd et')),
+            Container(
+              width: 92,
+              height: 92,
+              decoration: BoxDecoration(
+                color: reng.withValues(alpha: 0.10),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(ikon, size: 42, color: reng),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              t(basliq),
+              textAlign: TextAlign.center,
+              style: tema.bodyLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+                height: 1.4,
+              ),
+            ),
+            if (duymeAdi != null && duymeEmeliyyati != null) ...[
+              const SizedBox(height: 18),
+              FilledButton(
+                onPressed: duymeEmeliyyati,
+                child: Text(t(duymeAdi!)),
+              ),
+            ],
           ],
         ),
       ),

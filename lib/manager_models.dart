@@ -2,7 +2,8 @@ class IsciSetiri {
   final int userId;
   final String ad;
   final int? hesabatId;
-  final String status; // yoxdur, qaralama, gonderildi, geri_qaytarildi, tesdiqlendi
+  final String
+  status; // yoxdur, qaralama, gonderildi, geri_qaytarildi, tesdiqlendi
   final int? cemi;
 
   const IsciSetiri({
@@ -14,12 +15,12 @@ class IsciSetiri {
   });
 
   factory IsciSetiri.fromJson(Map<String, dynamic> j) => IsciSetiri(
-        userId: j['user_id'] as int,
-        ad: j['ad'] as String,
-        hesabatId: j['hesabat_id'] as int?,
-        status: j['status'] as String,
-        cemi: j['cemi'] as int?,
-      );
+    userId: j['user_id'] as int,
+    ad: j['ad'] as String,
+    hesabatId: j['hesabat_id'] as int?,
+    status: j['status'] as String,
+    cemi: j['cemi'] as int?,
+  );
 }
 
 class DetalDerman {
@@ -36,11 +37,11 @@ class DetalDerman {
   });
 
   factory DetalDerman.fromJson(Map<String, dynamic> j) => DetalDerman(
-        medicineId: j['medicine_id'] as int,
-        ad: j['ad'] as String,
-        sira: j['sira'] as int,
-        cemi: j['cemi'] as int,
-      );
+    medicineId: j['medicine_id'] as int,
+    ad: j['ad'] as String,
+    sira: j['sira'] as int,
+    cemi: j['cemi'] as int,
+  );
 }
 
 class DetalHekim {
@@ -101,17 +102,17 @@ class HesabatDetali {
   });
 
   factory HesabatDetali.fromJson(Map<String, dynamic> j) => HesabatDetali(
-        id: j['id'] as int,
-        iscAd: j['isci_ad'] as String,
-        ay: j['ay'] as String,
-        status: j['status'] as String,
-        serh: j['menecer_serhi'] as String?,
-        cemi: j['cemi'] as int,
-        dermanlar: (j['dermanlar'] as List)
-            .map((e) => DetalDerman.fromJson(e as Map<String, dynamic>))
-            .toList(),
-        hekimler: (j['hekimler'] as List)
-            .map((e) => DetalHekim.fromJson(e as Map<String, dynamic>))
-            .toList(),
-      );
+    id: j['id'] as int,
+    iscAd: j['isci_ad'] as String,
+    ay: j['ay'] as String,
+    status: j['status'] as String,
+    serh: j['menecer_serhi'] as String?,
+    cemi: j['cemi'] as int,
+    dermanlar: (j['dermanlar'] as List)
+        .map((e) => DetalDerman.fromJson(e as Map<String, dynamic>))
+        .toList(),
+    hekimler: (j['hekimler'] as List)
+        .map((e) => DetalHekim.fromJson(e as Map<String, dynamic>))
+        .toList(),
+  );
 }

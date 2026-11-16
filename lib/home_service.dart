@@ -7,30 +7,6 @@ String cariAy() {
   return '${d.year}-${d.month.toString().padLeft(2, '0')}';
 }
 
-class SonQeyd {
-  final String novu; // satis, geri_qaytarma, resept
-  final String derman;
-  final String pointAd;
-  final int say;
-  final String tarix;
-
-  const SonQeyd({
-    required this.novu,
-    required this.derman,
-    required this.pointAd,
-    required this.say,
-    required this.tarix,
-  });
-
-  factory SonQeyd.fromJson(Map<String, dynamic> j) => SonQeyd(
-        novu: j['novu'] as String,
-        derman: j['derman'] as String,
-        pointAd: j['point_ad'] as String,
-        say: j['say'] as int,
-        tarix: j['tarix'] as String,
-      );
-}
-
 class RegionCemi {
   final String ad;
   final int qaliq;
@@ -44,19 +20,35 @@ class RegionCemi {
   });
 }
 
+class DiqqetSiyahi {
+  final String derman;
+  final String pointAd;
+  final String regionAd;
+  final int qaliq;
+  final String status; // az, sifir
+
+  const DiqqetSiyahi({
+    required this.derman,
+    required this.pointAd,
+    required this.regionAd,
+    required this.qaliq,
+    required this.status,
+  });
+}
+
 class AnaMelumat {
   final String ay;
   final List<DermanCemi> dermanlar; // bütün regionlar birlikdə
   final List<RegionCemi> regionlar;
   final int? geriQaytarma; // yalnız menecer
-  final List<SonQeyd> sonQeydler; // yalnız nümayəndə
+  final List<DiqqetSiyahi> diqqet; // aşağı stoklar, yalnız nümayəndə
 
   const AnaMelumat({
     required this.ay,
     required this.dermanlar,
     required this.regionlar,
     required this.geriQaytarma,
-    required this.sonQeydler,
+    required this.diqqet,
   });
 
   int get qaliq => regionlar.fold(0, (a, r) => a + r.qaliq);
@@ -77,6 +69,7 @@ class AnaServisi {
 
     final birlesmis = <int, DermanCemi>{};
     final regionlar = <RegionCemi>[];
+    final diqqet = <DiqqetSiyahi>[];
     for (var i = 0; i < reg.length; i++) {
       final n = StokNeticesi.fromJson(stoklar[i] as Map<String, dynamic>);
       var q = 0, s = 0, r = 0;
@@ -94,22 +87,35 @@ class AnaServisi {
           resept: (b?.resept ?? 0) + d.resept,
         );
       }
-      regionlar.add(RegionCemi(
-        ad: reg[i]['ad'] as String,
-        qaliq: q,
-        satilib: s,
-        resept: r,
-      ));
+      if (!menecer) {
+        for (final p in n.noqteler) {
+          for (final d in p.dermanlar) {
+            if (d.status == 'normal') continue;
+            diqqet.add(
+              DiqqetSiyahi(
+                derman: d.ad,
+                pointAd: p.ad,
+                regionAd: reg[i]['ad'] as String,
+                qaliq: d.qaliq,
+                status: d.status,
+              ),
+            );
+          }
+        }
+      }
+      regionlar.add(
+        RegionCemi(ad: reg[i]['ad'] as String, qaliq: q, satilib: s, resept: r),
+      );
     }
+    diqqet.sort((a, b) {
+      if (a.status != b.status) return a.status == 'sifir' ? -1 : 1;
+      final ferq = a.qaliq.compareTo(b.qaliq);
+      return ferq != 0 ? ferq : a.derman.compareTo(b.derman);
+    });
 
     int? geri;
-    var son = <SonQeyd>[];
     if (menecer) {
       geri = (await MenecerServisi.geriQaytarmalar(ay)).cemi;
-    } else {
-      son = ((await ApiClient.get('/me/recent')) as List)
-          .map((e) => SonQeyd.fromJson(e as Map<String, dynamic>))
-          .toList();
     }
 
     return AnaMelumat(
@@ -118,7 +124,7 @@ class AnaServisi {
         ..sort((a, b) => a.sira.compareTo(b.sira)),
       regionlar: regionlar,
       geriQaytarma: geri,
-      sonQeydler: son,
+      diqqet: diqqet,
     );
   }
 }

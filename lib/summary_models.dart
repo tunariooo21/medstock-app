@@ -16,11 +16,8 @@ class AdCemi {
   final int cemi;
   const AdCemi({required this.id, required this.ad, required this.cemi});
 
-  factory AdCemi.fromJson(Map<String, dynamic> j) => AdCemi(
-        id: j['id'] as int,
-        ad: j['ad'] as String,
-        cemi: j['cemi'] as int,
-      );
+  factory AdCemi.fromJson(Map<String, dynamic> j) =>
+      AdCemi(id: j['id'] as int, ad: j['ad'] as String, cemi: j['cemi'] as int);
 }
 
 class AyCemi {
@@ -50,13 +47,13 @@ class DermanXulase {
   });
 
   factory DermanXulase.fromJson(Map<String, dynamic> j) => DermanXulase(
-        id: j['id'] as int,
-        ad: j['ad'] as String,
-        sira: j['sira'] as int,
-        cemi: j['cemi'] as int,
-        evvelkiAy: j['evvelki_ay'] as int,
-        ferqFaiz: (j['ferq_faiz'] as num?)?.toDouble(),
-      );
+    id: j['id'] as int,
+    ad: j['ad'] as String,
+    sira: j['sira'] as int,
+    cemi: j['cemi'] as int,
+    evvelkiAy: j['evvelki_ay'] as int,
+    ferqFaiz: (j['ferq_faiz'] as num?)?.toDouble(),
+  );
 }
 
 class HekimXulase {
@@ -111,19 +108,19 @@ class Xulase {
   });
 
   factory Xulase.fromJson(Map<String, dynamic> j) => Xulase(
-        ay: j['ay'] as String,
-        cemi: j['cemi'] as int,
-        evvelkiCemi: j['evvelki_cemi'] as int,
-        dermanlar: _siyahi(j['dermanlar'], DermanXulase.fromJson),
-        hekimler: _siyahi(j['hekimler'], HekimXulase.fromJson),
-        son6Ay: _siyahi(j['son_6_ay'], AyCemi.fromJson),
-        iscilar: j['iscilar'] == null
-            ? null
-            : _siyahi(j['iscilar'], AdCemi.fromJson),
-        regionlar: j['regionlar'] == null
-            ? null
-            : _siyahi(j['regionlar'], AdCemi.fromJson),
-      );
+    ay: j['ay'] as String,
+    cemi: j['cemi'] as int,
+    evvelkiCemi: j['evvelki_cemi'] as int,
+    dermanlar: _siyahi(j['dermanlar'], DermanXulase.fromJson),
+    hekimler: _siyahi(j['hekimler'], HekimXulase.fromJson),
+    son6Ay: _siyahi(j['son_6_ay'], AyCemi.fromJson),
+    iscilar: j['iscilar'] == null
+        ? null
+        : _siyahi(j['iscilar'], AdCemi.fromJson),
+    regionlar: j['regionlar'] == null
+        ? null
+        : _siyahi(j['regionlar'], AdCemi.fromJson),
+  );
 
   bool get hecNeYoxdur =>
       cemi == 0 && evvelkiCemi == 0 && son6Ay.every((c) => c.cemi == 0);

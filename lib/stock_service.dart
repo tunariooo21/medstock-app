@@ -32,7 +32,9 @@ class StokServisi {
     int? derman,
   }) async {
     final dermanHissesi = derman != null ? '&medicine=$derman' : '';
-    final cavab = await ApiClient.get('/stock?region=$region&month=$ay$dermanHissesi');
+    final cavab = await ApiClient.get(
+      '/stock?region=$region&month=$ay$dermanHissesi',
+    );
     return StokNeticesi.fromJson(cavab as Map<String, dynamic>);
   }
 }
